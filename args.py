@@ -42,6 +42,22 @@ def create_parser():
         default="us-east-1",
         help="AWS region name"
     )
+    # AWS credentials parameters
+    parser.add_argument(
+        "--aws-access-key-id",
+        type=str,
+        help="AWS access key ID"
+    )
+    parser.add_argument(
+        "--aws-secret-access-key",
+        type=str,
+        help="AWS secret access key"
+    )
+    parser.add_argument(
+        "--aws-session-token",
+        type=str,
+        help="AWS session token"
+    )
     
     # Schedule parser
     parser.add_argument(
@@ -58,6 +74,7 @@ def create_parser():
         default="00:00",
         help="Daily schedule time in HH:MM format"
     )
+
     
     collector_subparsers = parser.add_subparsers(
         dest='collector_type', 
@@ -86,7 +103,7 @@ def create_parser():
 
 
 def run(args):
-        # Initialize Neo4j driver
+    # Initialize Neo4j driver
     driver = GraphDatabase.driver(
         args.neo4j_uri,
         auth=(args.neo4j_user, args.neo4j_password)
@@ -96,11 +113,18 @@ def run(args):
     session_kwargs = {}
     if args.profile:
         session_kwargs['profile_name'] = args.profile
-    session = boto3.session.Session(**session_kwargs)
+    if args.aws_access_key_id and args.aws_secret_access_key:
+        session_kwargs.update({
+            'aws_access_key_id': args.aws_access_key_id,
+            'aws_secret_access_key': args.aws_secret_access_key
+        })
+        if args.aws_session_token:
+            session_kwargs['aws_session_token'] = args.aws_session_token
 
     if args.collector_type == 's3':
         # Initialize S3 collector
-        s3_client = session.client('s3')
+        session = boto3.session.Session(**session_kwargs)
+        s3_client = session.client('s3', region_name=args.region)
         collector = S3Collector(
             client=s3_client,
             driver=driver,
@@ -119,6 +143,7 @@ def run(args):
 
     elif args.collector_type == 'api':
         # Initialize API collector
+        session = boto3.session.Session(**session_kwargs)
         config_client = session.client('config', region_name=args.region)
         filter_args = {}
         if args.filter_region:

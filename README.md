@@ -82,6 +82,30 @@ python main.py --neo4j-uri bolt://localhost:7687 --neo4j-user neo4j --neo4j-pass
 python main.py --command schedule --neo4j-uri bolt://localhost:7687 --neo4j-user neo4j --neo4j-password your_password --schedule-time "02:00" s3 your-bucket
 ```
 
+### AWS Credentials
+
+You can provide AWS credentials in several ways:
+
+1. Using AWS profile:
+
+```bash:README.md
+python main.py --profile your-profile-name ...
+```
+
+2. Using access keys directly:
+
+```bash:README.md
+python main.py \
+  --aws-access-key-id YOUR_ACCESS_KEY_ID \
+  --aws-secret-access-key YOUR_SECRET_ACCESS_KEY \
+  [--aws-session-token YOUR_SESSION_TOKEN] \
+  ...
+```
+
+3. Using environment variables (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_SESSION_TOKEN)
+
+4. Using EC2 instance profile or container role (no additional configuration needed)
+
 ## AWS Config Setup
 
 ### How to collect multi accounts' resources in single account
