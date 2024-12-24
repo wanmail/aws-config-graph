@@ -1,0 +1,5 @@
+neo4j==5.11.0
+boto3==1.28.0
+mypy-boto3-config
+mypy-boto3-s3 
+schedule==1.2.0 

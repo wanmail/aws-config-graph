@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  neo4j:
+    image: neo4j:5.25.1-community-bullseye
+    environment:
+      - NEO4J_AUTH=${NEO4J_USER:-neo4j}/${NEO4J_PASSWORD:-neo4jpass}
+      - NEO4J_PLUGINS=["apoc"]
+    ports:
+      - "7474:7474"  # HTTP
+      - "7687:7687"  # Bolt
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+    networks:
+      - aws-config-net
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider localhost:7474 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  index-init:
+    build: .
+    command: python index.py bolt://neo4j:7687 --username ${NEO4J_USER:-neo4j} --password ${NEO4J_PASSWORD:-neo4jpass}
+    networks:
+      - aws-config-net
+    depends_on:
+      neo4j:
+        condition: service_healthy
+
+  collector:
+    build: .
+    command: python main.py --command schedule --neo4j-uri bolt://neo4j:7687 --neo4j-user ${NEO4J_USER:-neo4j} --neo4j-password ${NEO4J_PASSWORD:-neo4jpass} --schedule-time "02:00" s3 ${BUCKET_NAME}
+    networks:
+      - aws-config-net
+    volumes:
+      - ~/.aws:/home/appuser/.aws:ro
+    depends_on:
+      neo4j:
+        condition: service_healthy
+      index-init:
+        condition: service_completed_successfully
+
+networks:
+  aws-config-net:
+    driver: bridge
+
+volumes:
+  neo4j_data:
+  neo4j_logs: 
